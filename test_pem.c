@@ -4,13 +4,18 @@
 #include <openssl/err.h>
 #include <string.h>
 static int passwd_callback(char *pcszbuff,int size,int rwflag,void *pPass);
+#ifndef MAX
+#define MAX 100
+#endif
 
-int generate_key()
+int generate_key(char *priv_name,char *pub_name)
 {
 	int				ret = 0;
 	RSA				*r = NULL,*rpub=NULL;
 	BIGNUM			*bne = NULL;
 	BIO				*bp_public = NULL, *bp_private = NULL;
+	char buffer[MAX];
+	char buffer2[MAX];
 
 	int				bits = 2048;
 	unsigned long	e = RSA_F4;
@@ -29,7 +34,8 @@ int generate_key()
 	}
 
 	// 2. save public key
-	bp_public = BIO_new_file("public.pem", "w+");
+	strcat(strcpy(buffer,pub_name),".pem");
+	bp_public = BIO_new_file(buffer, "w+");
 	ret = PEM_write_bio_RSAPublicKey(bp_public, r);
 	
 	if(ret != 1){
@@ -39,7 +45,8 @@ int generate_key()
 
 
 	// 3. save private key
-	bp_private = BIO_new_file("private.pem", "w+");
+	strcat(strcpy(buffer2,priv_name),".pem");
+	bp_private = BIO_new_file(buffer2, "w+");
 	ret = PEM_write_bio_RSAPrivateKey(bp_private, r, NULL, NULL, 0, NULL, NULL);
 
     //4.Encryption and Decryption
@@ -99,11 +106,95 @@ int read_public_key(){
 	return 0;
 };
 
+char * public_encript(char *msg,char *pub_name){
+   
+   
+   FILE *fp=NULL;
+   char buffer[MAX];
+   char buffer2[MAX];
+   char *encrypt,*err;
+   int encrypt_len;
+   
+
+   //Leer la clave publica
+   strcat(strcpy(buffer,pub_name),".pem");
+   fp=fopen(buffer,"r");
+   RSA *rsa_pub=PEM_read_RSAPublicKey(fp,NULL,NULL,NULL);
+   
+   
+
+   //Preparar el mensaje a encriptar
+   //msg[strlen(msg)-1]='\0';
+
+   //Encriptacion con clave publica
+   err=malloc(130);
+   encrypt=malloc(RSA_size(rsa_pub));
+   if((encrypt_len=RSA_public_encrypt(strlen(msg)+1,(unsigned char*)msg,(unsigned char*)encrypt,rsa_pub,RSA_PKCS1_OAEP_PADDING))==-1)
+	{
+		ERR_error_string(ERR_get_error(),err);
+        fprintf(stderr,"Error encrypting message %s\n",err);
+
+        goto free_stuff;
+    }
+   
+    RSA_free(rsa_pub);
+	fclose(fp);
+
+	return encrypt;
+
+
+
+
+    free_stuff:
+     RSA_free(rsa_pub);
+	 free(encrypt);
+	 fclose(fp);
+
+	 return " ";
+
+}
+
+
+
+char * private_decript(char *priv_name,char *encrypt){
+   
+   FILE *fp=NULL;
+   char buffer[MAX];
+   char buffer2[MAX];
+   char *decrypt,*err;
+   int encrypt_len=256;
+
+
+   //Leer la clave privaada
+   strcat(strcpy(buffer,priv_name),".pem");
+   fp=fopen(buffer,"r");
+   RSA *rsa_priv=PEM_read_RSAPrivateKey(fp,NULL,NULL,NULL);
+
+   //Desencriptar mensaje
+   decrypt=malloc(encrypt_len);
+   err=malloc(130);
+   	if(RSA_private_decrypt(encrypt_len,(unsigned char *)encrypt,(unsigned char*)decrypt,rsa_priv,RSA_PKCS1_OAEP_PADDING)==-1){
+        ERR_load_CRYPTO_strings();
+        ERR_error_string(ERR_get_error(),err);
+        fprintf(stderr,"Error decrypting message: %s\n",err);
+    };
+
+
+	fclose(fp);
+
+	return decrypt;
+
+
+}
+
 int main(int argc, char* argv[]) 
 {
     
-	generate_key();
-	read_public_key();
+	generate_key("test_priv","test_pub");
+	char *msg=public_encript("hola mundo","test_pub");
+	char *dec=private_decript("test_priv",msg);
+	printf("%s",dec);
+	//read_public_key();
         return 0;
 }
 

@@ -14,17 +14,17 @@ int main(){
     "QWPdspTBKcxeFbccDwIDAQAB\n" 
     "-----END PUBLIC KEY-----\n"; 
  
-    BIO* bio = BIO_new_mem_buf(key, (int)sizeof(key));
+    BIO* bio = BIO_new_mem_buf(key, strlen(key));
     BIO* f_bio=BIO_new_file("public_convert.pem", "w+"); 
     
-    RSA *pkey=RSA_new();
-    PEM_read_bio_RSA_PUBKEY(bio,pkey,NULL,NULL);
+    RSA *pkey=NULL;
+    PEM_read_bio_RSAPublicKey(bio,&pkey,0,0);
+    //PEM_read_bio_RSA_PUBKEY(bio,pkey,NULL,NULL);
     PEM_write_bio_RSAPublicKey(f_bio,pkey);
+    //RSA* rsa = EVP_PKEY_get1_RSA(pkey);
+    //PEM_write_bio_RSAPublicKey(f_bio,rsa);
 
 
-    
-    
-    EVP_PKEY_free(pkey); 
     BIO_free(bio);
 }
 
