@@ -1,0 +1,112 @@
+Cifrado RSA con relleno PKCS y clave pública adquirida del certificado:
+
+openssl rsautl -encrypt -in sesskey -inkey cert.pem -certin -out temp
+openssl base64 -e -in temp -out enc_sesskey
+
+
+Descifrado RSA con relleno PKCS y clave privada:
+
+openssl base64 -d -in enc_sesskey -out temp
+openssl rsautl -decrypt -in temp -inkey privkey.pem -out sesskey2
+Probado y confirmado para estar bien porque el contenido del archivo "sesskey" es el mismo que el contenido del archivo "sesskey2".
+
+
+
+------------------------
+
+Primero, generaremos una clave privada RSA de 2,048 bits y la analizaremos.
+openssl genrsa -out private_key.pem 2048
+
+para visualizar: cat private_key.pem
+
+
+Cómo generar una clave pública:
+openssl rsa -in private_key.pem -outform PEM -pubout -out public_key.pem
+
+para visualizar: cat public_key.pem
+
+
+Cómo encriptar y desencriptar:
+archivo: echo 'This is a secret message, for authorized parties only'  secret.txt
+
+encripta: openssl rsautl -encrypt -pubin -inkey public_key.pem -in secret.txt -out secret.enc
+desencripta: openssl rsautl -decrypt -inkey private_key.pem -in secret.enc
+
+
+Para crear un resumen de hash del mensaje, ingrese el siguiente comando:
+openssl dgst -sha256 -sign private_key.pem -out secret.txt.sha256 secret.txt
+openssl dgst -sha256 -verify public_key.pem -signature secret.txt.sha256 secret.txt
+
+
+
+
+
+
+
+
+comando diff prueba.txt prueba2.txt   me indica si 2 archivos son diferentes 
+--------------------------------------------------------------------------
+
+VALIDAR LA VERSION DE OPENSSL
+openssl version
+
+CREAR UN ARCHIVO EN TEXTO CLARO
+1.Crear un archivo en texto plano que se llame invictus.txt 
+vim invictus.txt
+
+En la noche que me envuelve,
+negra, como un pozo insondable,
+le doy gracias a los dioses que pudieren existir,
+por mi alma inconquistable.
+
+En las garras de las circunstancias,
+no he gemido, ni he llorado.
+Bajo los golpes del destino,
+mi cabeza ensangrentada jamás se ha postrado.
+
+CIFRADO SIMETRICO
+CODIFICAR EL ARCHIVO EN TEXTO CLARO
+1. Codificar el archivo invictus.txt a formato base64
+
+openssl enc -base64 -in invictus.txt -out invictus.base64
+
+CIFRADO SIMETRICO DEL ARCHIVO
+1. Proceda a cifrar el archivo base64 con el algoritmo simetrico aes256
+
+openssl enc -aes-256-cbc -in invictus.base64 -out invictus.cifrado // a=ciafrado de bloque
+
+2. Proceda a descifrar el archivo invictus.cifrado observe que
+antes de descifrar primero se decodifica
+
+openssl enc -aes-256-cbc -d -in invictus.cifrado -out invictus.decodificado
+
+3. Proceda a descifrar el archivo invictus.decodificado
+openssl enc -base64 -d -in invictus.decodificado -out invictus.descifrado
+
+4. borrar contenido de la carpeta cifrado
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+CIFRADO ASIMETRICO CREACION DE LLAVES
+1. Generar la clave semilla para la  clave publica y la clave privada
+openssl genrsa -out semilla.pem
+
+2. Generar la clave privada a partir de la semilla algoritmo 3des 
+clave privada centos.2021
+openssl rsa -in semilla.pem -des3 -out clavePrivada.pem
+
+3. Proceda a generar la clave pública a partir de la semilla
+esta es la que se debe distribuir
+openssl rsa -in semilla.pem -pubout -out clavePublica.pem
+
+4. Proceda a borrar la clave semilla
+rm -rf semilla.pem
+
+CIFRADO ASIMETRICO CIFRADO Y DESCIFRADO DE MENSAJE
+1. Crear nuevamente el archivo invictus.txt
+
+2. Proceda a cifrar el archivo invictus.txt con la llave publica denominada
+clavePublica.pem este archivo cifrado es el que se envia al destinatario
+
+openssl rsautl -encrypt -in invictus.txt -inkey clavePublica.pem -pubin -out invictus.cifrado
+
+3. Proceda a descifrar el archivo invictus.cifrado con la llave privada
+openssl rsautl -decrypt -inkey clavePrivada.pem -in invictus.cifrado -out invictus.descifrado

@@ -1,63 +1,70 @@
-/*************************************************************************************/
-/* @file    tcp_thead_server.h                                                       */        
-/* @brief   servidor tcp utilizando sockets e hilos                                  */
-/*************************************************************************************/
+                                 
 #ifndef _tcp_thead_server_h
 #define _tcp_thead_server_h
 #include <unistd.h>  
-//sockets
 #include <netdb.h> 
 #include <netinet/in.h> 
 #include <sys/socket.h> 
 #include <sys/types.h> 
 #include <arpa/inet.h>
-//hilos
 #include <pthread.h>
-//finder / utilities
 #include "finder.h"
-#include "utils.h"
-//strings / errores
+#include "herramientas.h"
 #include <errno.h>
 #include <stdio.h> 
 #include <string.h> 
-//Parametros para el servidor
-#define BUF_SIZE    500    // tamaño del buffer de recepcion y transmision de datos  
-#define BACKLOG     5      // cola de espera de clientes
+#define BUF_SIZE    2048    
+#define BACKLOG     5      
+
+char public_user_key[20], privadakey[20], cmd[512], buff_as[BUF_SIZE],buff_as2[BUF_SIZE], 
+buff_rx[BUF_SIZE];
 
 void *connection_handler(void *p_connfd){
     int connfd = *((int*)p_connfd);
     free(p_connfd);
-    int  len_rx, len_tx = 0;                    // Tamaño de lo recibido y enviado, en bytes
-    char buff_tx[BUF_SIZE], buff_rx[BUF_SIZE];  // Buffer de trasnmision (tx) y recepcion (rx)
-    // recibe la consulta en el buffer de recepcion	- read()	          
-    len_rx = read(connfd, buff_rx, sizeof(buff_rx));  
+    int  len_rx, len_tx = 0;                    	          
+    len_rx = read(connfd, buff_rx, sizeof(buff_rx));  // recibo 
+
+    buffer_file(buff_rx); 
+    desencriptado_servidores(nombrearchivo); 
+    // aqui inserto funcion para extraer del archivo: ID, OPC, MENSAJE. 
+      
     if(len_rx == -1){
         fprintf(stderr, "[SERVER-error]: connfd cannot be read. %d: %s \n", errno, strerror( errno ));
         pausa();
         return NULL;
     }
-    else{  
-    // realiza busqueda y guarda los resultados de la consulta en el buffer de trasnmision              
-    char *buff_tx = gfind(buff_rx);	              
-	buff_rx[strlen(buff_rx)-1] = '\0';
-    printf("[CLIENT]: Search for \"%s\"\n",buff_rx);
-    // envia respuesta - write()
-    write(connfd, buff_tx, strlen(buff_tx));     
-    // imprime respuesta
-    printf("[SERVER]: Results from \"%s\"\n",buff_rx);
-    printf("%s",buff_tx);
-    // cerramos el socket con el cliente - close()
-    printf("[SERVER]: socket closed \n\n");
-    close(connfd);
+    else{              
+
+    printf("[CLIENT]:\n");
+    printf("Mensaje encriptado: \n");
+    system("cat archivorecibido.cifrado \n");
+    printf("\nMensaje desencriptado: \n");
+    system("\ncat archivorecibido.txt");
+
+    strcpy(buff_as,"Hola1"); 
+    strcpy(buff_as2,"\nhola2"); 
+    write(connfd, buff_as, strlen(buff_as));     // envia
+    write(connfd, buff_as2, strlen(buff_as2));
+
+    // buff_tx[0]  = '\0'; // limpia buffer 
+    system("rm archivorecibido.txt");
+    system("rm archivorecibido.cifrado");
+    system("rm archivorecibido.base64"); 
+
+    printf("\n\n\n[SERVER]: Resultado\n");
+    printf("%s \n %s",buff_as,buff_as2);
+    printf("\n\n[SERVER]: socket closed \n\n");
+    close(connfd); 
     }  
 }
 
 void runServer_tcp_t(int PORT){ 
-    int sockfd, connfd;                         // listening and connection socket file descriptor
+    int sockfd, connfd;                         // descriptor para escucha y conxion 
     unsigned int len;                           // Tamaño de la direccion del cliente
     struct sockaddr_in servaddr, client;        // Socket address format for server and client
                             
-    // creacion del socket del servidor - socket()
+    // creacion del socket del servidor 
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
     if (sockfd == -1){ 
         fprintf(stderr, "[SERVER-error]: socket creation failed. %d: %s \n", errno, strerror( errno ));
@@ -67,7 +74,7 @@ void runServer_tcp_t(int PORT){
     else{
         printf("\n[SERVER]: Socket successfully created\n"); 
     }
-    // vinculo la direccion IP y puerto local al socket creado anteriormente - bind()
+    // vinculo la direccion IP y puerto local al socket
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family      = AF_INET; 
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
@@ -80,7 +87,7 @@ void runServer_tcp_t(int PORT){
     else{
         printf("[SERVER]: Socket successfully binded \n");
     }
-    // escuchar clientes para ser atendidos - listen()
+    // escucha de clientes 
     if ((listen(sockfd, BACKLOG)) != 0){ 
         fprintf(stderr, "[SERVER-error]: socket listen failed. %d: %s \n", errno, strerror( errno ));
         pausa();
@@ -91,7 +98,7 @@ void runServer_tcp_t(int PORT){
     }
     // ciclo de espera de clientes
     while(1){
-        // aceptar coneccion de un cliente - accept()
+        // aceptar  cliente
         len = sizeof(client); 
         connfd = accept(sockfd, (struct sockaddr *)&client, &len); 
         if (connfd < 0){ 
