@@ -134,6 +134,38 @@ int diff_time(time_t start,time_t end,int limit){
         return 0;
 }
 
+//Dado una variable time_t retorna un string con el formato HH:MM:SS
+char *time_to_string(time_t t){
+   char *aux;
+   char s[100];
+   
+   strftime(s,100,"%H:%M:%S",localtime(&t));
+   printf("bandera tal\n");
+   aux=s;
+   return aux;
+
+}
+
+//Dado un char con el formato HH:MM:SS retorna una variable time_t
+
+time_t string_to_time(char *s){
+    
+    struct tm ts={0};
+    
+    s[2]=s[5]="\0";
+  
+    ts.tm_hour=atoi(&s[0]);
+    ts.tm_min=atoi(&s[3]);
+    ts.tm_sec=atoi(&s[6]);
+
+    time_t t=mktime(&ts);
+
+    return t;
+
+}
+
+
+
 //cambiar el nombre del archivo a recibir
 void buffer_file(char *buff_rx_as){
     FILE *fichero2; 
