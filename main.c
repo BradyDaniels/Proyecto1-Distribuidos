@@ -20,9 +20,10 @@ int Menu();
 char *formatoCadena(char str1[], char str2[], char str3[], char str4[], char str5[]);
 void ipServidor();
 void searchip(); 
-char *formatollave(char str1[], char str2[]);
+char *formatollave(char str1[], char str2[], char str3[]);
 
 int main(){ 
+    
     
     loginMenu();  
     char* inst=instruction, rlocal; 
@@ -33,11 +34,6 @@ int main(){
     servicename[0]='A'; // siempre definido como A, como se puede cambiar?  
     lifetime[0]='3'; // ingresar tiempo que va a durar 
     ipcliente[0]='C'; 
-
-
-
-
-
 
     while (input != 5){ 
         switch (input){
@@ -53,9 +49,10 @@ int main(){
             runClient_tcp_t(port, address->address,formatoCadena(id,ipcliente,servicename,opc,instruction));
             address = address->next; 
         }
-        printf("\n\nPresiona enter para regresar al menu principal..\n");
+        printf("\n\nPresiona enter para regresar a inicio..\n");
         system("rm ip.txt"); 
-        pausa();           
+        pausa();      
+                 
         break; 
         
         case 2: // por archivo vacio
@@ -122,9 +119,14 @@ void loginMenu(){
         strcpy(instruction,file_buffer(public)); 
         while (address != NULL)
         {            
-            runClient_tcp_t(port, address->address,formatollave(id,instruction));
+            runClient_tcp_t(port, address->address,formatollave(id,instruction,"1"));
             address = address->next; 
+            printf("\n\nPresiona enter para regresar al menu principal..\n");
+            pausa();
+        break;
+
         }
+
         instruction[0] = '\0'; 
 
     }   else 
@@ -177,14 +179,16 @@ char *formatoCadena(char str1[], char str2[], char str3[], char str4[], char str
 return buffer;	
 }
 
-char *formatollave(char str1[], char str2[]){
+char *formatollave(char str1[], char str2[], char str3[]){
     cleanBuffer();
     buffer[0] = '\0';
 //	char *buffer = (char*) malloc(sizeof(char) * 300);
 	strcat(buffer,"ID: ");
 	strcat(buffer,str1);
-    strcat(buffer,", Publica: ");
+    strcat(buffer,",publica: ");
 	strcat(buffer,str2);
+    strcat(buffer,",nivel: ");
+	strcat(buffer,str3);
 
 return buffer;	
 }
