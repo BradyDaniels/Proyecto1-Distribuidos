@@ -1,2 +1,0 @@
-ID: brady,TGS: TgsUcab,Timestamp: 19:00:00,Ipcliente: 192.168.1.109 
-,Lifetime: 60,Clavesesion: 88îeKiMob
