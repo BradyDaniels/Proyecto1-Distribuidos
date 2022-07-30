@@ -102,6 +102,82 @@ char *file_buffer(char *file){
 
 return FL_UPDATE_FILE_NAME; 
 }
+//hace una des-encriptacion simetrica solicitando el nombre de un archivo .txt a encriptar (s) y la palabra clave (p)
+int symetric_encript(char *s,char *p) {
+  char *sen="openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 10000 -salt -in ";
+  char *sen2=".txt -out ";
+  char *sen3=".enc -pass  pass:";
+  char buffer[100],buffer2[100],buffer3[100],buffer4[100],buffer5[100];
+
+  strcat(strcpy(buffer,sen),s);
+  strcat(strcpy(buffer2,buffer),sen2);
+  strcat(strcpy(buffer3,buffer2),s);
+  strcat(strcpy(buffer4,buffer3),sen3);
+  strcat(strcpy(buffer5,buffer4),p);
+
+  //system("openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 10000 -salt -in test.txt -out test.enc -pass  pass:admin");
+  system(buffer5);
+  return 0;
+}
+//hace una des-encriptacion simetrica solicitando el nombre de un archivo .txt a encriptar (s) y la palabra clave (p)
+int symetric_decript(char *s,char *p){
+  char *sen="openssl enc -aes-256-cbc -md sha512 -pbkdf2 -in ";
+  char *sen2=".enc -out ";
+  char *sen3="_clear.txt -d -pass  pass:";
+  char buffer[100],buffer2[100],buffer3[100],buffer4[100],buffer5[100];
+
+  strcat(strcpy(buffer,sen),s);
+  strcat(strcpy(buffer2,buffer),sen2);
+  strcat(strcpy(buffer3,buffer2),s);
+  strcat(strcpy(buffer4,buffer3),sen3);
+  strcat(strcpy(buffer5,buffer4),p);
+  
+  //system("openssl enc -aes-256-cbc -md sha512 -pbkdf2 -in test.enc -out test_clear.txt -d -pass pass:admin");
+  system(buffer5);
+   return 0;
+}
+//funcion que dada dos marcas de tiempo retorna la -1 si la diferencia entre ambas supera el limite(limit)
+int diff_time(time_t start,time_t end,int limit){
+
+     double diff_t=difftime(end,start);
+     if(diff_t>=limit){
+         return -1;
+     }
+     else 
+        return 0;
+}
+
+//Dado una variable time_t retorna un string con el formato HH:MM:SS
+char *time_to_string(time_t t){
+   char *aux;
+   char s[100];
+   
+   strftime(s,100,"%H:%M:%S",localtime(&t));
+   printf("bandera tal\n");
+   aux=s;
+   return aux;
+
+}
+
+//Dado un char con el formato HH:MM:SS retorna una variable time_t
+
+time_t string_to_time(char *s){
+    
+    struct tm ts={0};
+    
+    s[2]=s[5]="\0";
+  
+    ts.tm_hour=atoi(&s[0]);
+    ts.tm_min=atoi(&s[3]);
+    ts.tm_sec=atoi(&s[6]);
+
+    time_t t=mktime(&ts);
+
+    return t;
+
+}
+
+
 
 char *file_buffer2(char *filez){
 	
