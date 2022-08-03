@@ -34,6 +34,8 @@ int main(){
 
     getPort(2002);
     runServer_tcp_t(port);
+    printf("\nDENTRO D SERVR KDC\n");
+   
 
     return 0;
 }

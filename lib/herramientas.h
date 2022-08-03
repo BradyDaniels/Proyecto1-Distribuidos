@@ -16,7 +16,7 @@
 #define BUF_SIZE    2048
 
 char FL_UPDATE_FILE_NAME[BUF_SIZE], buf_as[BUF_SIZE], buf_as2[BUF_SIZE],
-buff_as[BUF_SIZE], buff_as2[BUF_SIZE],cadenap[200], cmd[512], publickey[20], publickey2[20],
+buff_as[BUF_SIZE], buff_as2[BUF_SIZE],cadenap[200], cmd[BUF_SIZE], publickey[20], publickey2[20],
 nombrearchivo[30], cmd2[512], prueba[2048], cadenaz[100];
 int w =0; 
 
@@ -67,6 +67,7 @@ void pausa(){
 void encriptado_keypublic(char *message, char *publickey){
     
 	if(w==0){
+		publickey2[0]='\0';
 		strcat(publickey2,publickey); 
 		strcat(publickey2,".pem");
 	}
@@ -76,6 +77,8 @@ void encriptado_keypublic(char *message, char *publickey){
     fichero = fopen("archivooriginal.txt", "wt"); 
     fputs(message, fichero);
     fclose(fichero); 
+	//printf("\nLlave para encriptar: %s",publickey2);min
+
     sprintf(cmd,"openssl rsautl -encrypt -in archivooriginal.txt -inkey %s -pubin -out archivooriginal.cifrado",publickey2);
     system(cmd); // encriptando el archivo original con la llave publica 
     system("openssl enc -base64 -in archivooriginal.cifrado -out archivooriginal.base64"); // codificacion del archivo encripado con base 64
@@ -104,17 +107,9 @@ return FL_UPDATE_FILE_NAME;
 }
 
 
-
-
-
-
-
-
-
-
 char *file_buffer2(char *filez){
 	
-	
+	prueba[0]='\0';
     FILE *pFilez;
     pFilez=fopen(filez,"r");
     if(pFilez!=NULL){      
@@ -131,6 +126,8 @@ char *file_buffer2(char *filez){
 return prueba; 
 }
 
+
+
 //cambiar el nombre del archivo a recibir
 void buffer_file(char *buff_rx_as){
     FILE *fichero2; 
@@ -140,6 +137,25 @@ void buffer_file(char *buff_rx_as){
     fclose(fichero2);
 }
 
+void buffer_file_prueba(char *buff_rx_as){
+    FILE *fichero2; 
+    fichero2 =fopen("m.base64","wt");
+    strcpy(nombrearchivo,"m.base64");
+    fputs(buff_rx_as,fichero2); 
+    fclose(fichero2);
+}
+
+void buffer_filex(char *buff_rx_as){
+    FILE *fichero2; 
+    fichero2 =fopen("mensajes.txt","wt");
+    fputs(buff_rx_as,fichero2); 
+    fclose(fichero2);
+}
+
+
+
+
+
 void desencriptado_servidores(char *file2){
 
   sprintf(cmd,"openssl enc -base64 -d -in %s -out archivorecibido.cifrado",file2);
@@ -148,6 +164,20 @@ void desencriptado_servidores(char *file2){
     // quizas se modifique el argumento de llave privada y la clave para acceder.   
 }
 // funcion para servidores 
+void desencriptado_servidoresTGS(char *file2){
+
+  sprintf(cmd,"openssl enc -base64 -d -in %s -out archivorecibido.cifrado",file2);
+  system(cmd);
+  system("openssl rsautl -decrypt -inkey tgs_privada.pem -in archivorecibido.cifrado -out archivorecibido.txt -passin pass:admin");
+    // quizas se modifique el argumento de llave privada y la clave para acceder.   
+}
+
+void desencriptado_servidoresSS(char *file2){
+
+  sprintf(cmd,"openssl enc -base64 -d -in %s -out archivorecibido.cifrado",file2);
+  system(cmd);
+ 
+}
 
 void desencriptado_clinte(char *file2, char *idcliente){
 
@@ -222,6 +252,21 @@ typedef struct Mensaje_cliente_as{
 } Mensaje_cliente_as;
 
 Mensaje_cliente_as *mcas; 
+Mensaje_cliente_as *mc;
+
+/*-------------------------------------------------------------*/
+
+/*--Estructura para guardar los datos de un mensaje--*/
+typedef struct Mensaje_cliente_as2{
+
+	char *servicename ;
+	char *lifetime ;
+	char *ID ;
+	char *timestamp ;
+} Mensaje_cliente_as2;
+
+Mensaje_cliente_as2 *mcas2; 
+Mensaje_cliente_as2 *mcas3; 
 
 /*-------------------------------------------------------------*/
 
@@ -243,15 +288,23 @@ return 0;}
 						  
 char *buscarDatos(char clave[], char registro[], char valor[], int id_flag){
 
+	//printf("\npalabritaa2: %s",clave);
+	//printf("\nbuffr: %s",registro);
+
   
 	char *strAux = NULL, *valorAux = NULL, *r = NULL;
 	int j = 0;
 //	printf("Entra en validacion222");
 	for(int i = 0; i < strlen(registro)-1; i++){
+		
 	
 		if(registro[i] == ':'){
-
+			strAux[j] = '\0';
+			
+			//printf("\n\nLo que hay en strAux:--%s--\n",strAux);
 			if(strcmp(strAux,clave) == 0){
+				
+				//printf("\n Entra en condicion"); 
 				if(valorAux == NULL)
 					valorAux = (char*) malloc(2050 *sizeof(char));
 				int l = 0;
@@ -267,14 +320,12 @@ char *buscarDatos(char clave[], char registro[], char valor[], int id_flag){
 
 				if(id_flag){
 					if(strcmp(valorAux, valor) == 0){
-						
 						r = (char * ) malloc(sizeof(char) * 2056); // 350
 						r = registro;
 						return r;
 					}
 				}else
-					return valorAux;
-							
+					return valorAux;				
 			}
 			free(strAux);
 			strAux = NULL;
@@ -291,12 +342,16 @@ char *buscarDatos(char clave[], char registro[], char valor[], int id_flag){
 			strAux = (char*)malloc(sizeof(char) * 2056); //30
 		}	
 		strAux[j] = registro[i];
+		//printf("\ncaracter:%c",strAux[j]);
+		//printf("Como va la cadena:-%s-",strAux);
 		j++;
 	}
  
  return NULL;
 }
 /*----------------------------------------------------------------*/
+
+
 
 /*-----Funcion que copia una linea de registro en una estructura y lo devuelve----*/
 Registro *copiarRegistro(char registro[], char valor[]){
@@ -313,6 +368,7 @@ return r;
 
 /*--Funcion que copia una linea de mensaje del cliente en una estructura y lo devuelve--*/
 Mensaje_cliente_as *copiarMensajeClienteAS(char mensaje[]){
+
 	mcas = (Mensaje_cliente_as *) malloc(sizeof(Mensaje_cliente_as));
 	mcas->ID = (char *) malloc(sizeof(char) * 100);
 	mcas->nivel = (char *) malloc(sizeof(char) * 1);
@@ -333,6 +389,8 @@ Mensaje_cliente_as *copiarMensajeClienteAS(char mensaje[]){
 /*-----------------------------------------------------------------------------------*/
 
 
+
+/*-----------------------------------------------------------------------------------*/
 /*-------Funcion que lee un archivo con el fin de encontrar un ID en él--------------*/
 Registro *buscarRegistro(char ID[]){
 	FILE *archivo;
@@ -426,6 +484,7 @@ return 1;}
 int diff_time(time_t start,time_t end,int limit){
 
      double diff_t=difftime(end,start);
+	 printf("\nDIferencia de tiempos: %d",diff_t); 
      if(diff_t>=limit){
          return -1;
      }
@@ -473,7 +532,7 @@ char *time_to_string(time_t t){
    char s[100];
 
    strftime(s,100,"%H:%M:%S",localtime(&t));
-   printf("bandera tal\n");
+  // printf("bandera tal\n");
    aux=s;
    return aux;
 
@@ -508,6 +567,17 @@ char *formatoCadenaClienteTgs1(char str1[], char str2[]){
 
 return buffer;	}
 
+char *formatoCadenaSS(char str1[], char str2[]){
+	char *buffer = (char*) malloc(sizeof(char) * 400);
+	for(int i = 0; i < strlen(buffer); i++)
+		buffer[i] = '\0';
+	strcat(buffer,"ID: ");
+	strcat(buffer,str1);
+	strcat(buffer,",Timestamp: ");
+	strcat(buffer,str2);
+
+return buffer;	}
+
 char *formatoCadenaClienteTgs2(char str1[], char str2[]){
 	char *buffer = (char*) malloc(sizeof(char) * 400);
 	for(int i = 0; i < strlen(buffer); i++)
@@ -516,6 +586,40 @@ char *formatoCadenaClienteTgs2(char str1[], char str2[]){
 	strcat(buffer,str1);
 	strcat(buffer,",Timestamp: ");
 	strcat(buffer,str2);
+
+return buffer;	}
+
+char *formatoCadenaClienteTgs3(char str1[], char str2[],char str3[], char str4[]){
+	char *buffer = (char*) malloc(sizeof(char) * 400);
+	for(int i = 0; i < strlen(buffer); i++)
+		buffer[i] = '\0';
+	strcat(buffer,"Servicename: ");
+	strcat(buffer,str1);
+	strcat(buffer,",Timestamp: ");
+	strcat(buffer,str2);
+	strcat(buffer,",Lifetime: ");
+	strcat(buffer,str3);
+	strcat(buffer,",Clavesesion: ");
+	strcat(buffer,str4);
+
+return buffer;	}
+
+char *formatoCadenaClienteTgs4(char str1[], char str2[],char str3[], char str4[],char str5[], char str6[]){
+	char *buffer = (char*) malloc(sizeof(char) * 400);
+	for(int i = 0; i < strlen(buffer); i++)
+		buffer[i] = '\0';
+	strcat(buffer,"ID: ");
+	strcat(buffer,str1);
+	strcat(buffer,"Servicename: ");
+	strcat(buffer,str2);
+	strcat(buffer,",Timestamp: ");
+	strcat(buffer,str3);
+	strcat(buffer,"IPcliente: ");
+	strcat(buffer,str4);
+	strcat(buffer,"LifetimeSS: ");
+	strcat(buffer,str5);
+	strcat(buffer,",Clavesesion: ");
+	strcat(buffer,str6);
 
 return buffer;	}
 
@@ -555,15 +659,19 @@ int symetric_decript(char *s,char *p){
 }
 
 void buffer_file_tgs(char *buff_rx_as, char nombre_archivo[100]){
+//printf("\nNOmbre de archivo: %s",nombre_archivo);
     FILE *fichero2; 
     fichero2 = fopen(nombre_archivo,"wt");
     fputs(buff_rx_as,fichero2); 
     fclose(fichero2);
 }
 
-int contar_saltos_linea(){
+int contar_lineas(){
 	FILE *archivo;
 	char linea[500], buffer[2048] , msj[15] = "";
+	linea[0]='\0'; 
+	buffer[0]='\0';
+	msj[0]='\0';
 	int j = 0, num_linea = 0;
 	archivo = fopen("mensajes.txt","r");
 
@@ -576,11 +684,8 @@ int contar_saltos_linea(){
     	{
 		while (feof(archivo) == 0)
  	    	{	
- 	        	fgets(linea,500,archivo);
- 
-  	        	if (strcmp(linea,"\n") == 0  ){	        
-  	        		num_linea++;	        		     
- 	    		}	    		    			
+ 	        	fgets(linea,500,archivo); 
+ 	        	num_linea++;	      	        	  	    		    			
    		}
    	fclose(archivo);
    }
@@ -589,11 +694,20 @@ int contar_saltos_linea(){
 return num_linea;}
 
 char *separar_mensaje(){
+
+		
 	FILE *archivo;
-	char linea[500], linea_anterior[500], buffer[2048] , msj[15] = "", num_text[2] = "\0";
-	int j = 0, num = 0, num_lineas = 0;
+	char linea[500], linea_anterior[500], buffer[2048] , msj[15] , num_text[2];
+	int j = 0, num = 0, num_lineas2 = 0, flag_ult_msj = 0, num_msj = 0, num_lineas1 = 0;
 	archivo = fopen("mensajes.txt","r");
-	char *rencontrado = NULL;
+
+linea[0]='\0';
+linea_anterior[0]='\0';
+buffer[0]='\0';
+msj[0] = '\0';
+	
+	//char *rencontrado = NULL;
+	
 
 	if (archivo == NULL)
     	{
@@ -602,56 +716,75 @@ char *separar_mensaje(){
     	}
     	else
     	{
-    	num_lineas = contar_saltos_linea();
+			
+    	num_lineas1 = contar_lineas() ;
+		
     	
 		while (feof(archivo) == 0)
  	    	{	
+				
  	        	fgets(linea,500,archivo);
- 	   	        	
-  	        	if (strcmp(linea,"\n") == 0  || (num == num_lineas)){
-  	        		num++;
-  	        		sprintf(num_text,"%d",num);
- 
+				
+				
+ 	   	   num_lineas2++;
+  	        	if (strcmp(linea,"\n") == 0 || (num_lineas1  == num_lineas2)){ 	        	
+  	        		num_msj++;  
+					
+  	        		sprintf(num_text,"%d",num_msj);
+ 	        		
  	        		for (int k = 0; k < strlen(msj); k++)
+					
  	        			msj[k] = '\0';
+						
  	        			
- 	        		if (num > num_lineas){
- 	        			/*for (int k = 0; k < strlen(buffer); k++)
- 	        				buffer[k] = '\0';*/
- 	        			for (int i = 0; i < strlen(linea); i++){
+ 	        		if (num_lineas1 == num_lineas2){
+						
+						for (int i = 0; i < strlen(linea); i++){
+							if(feof(archivo)) break;	
  	    					buffer[j] = linea[i];
  	    					j++;
+							
  	    				}
  	    				buffer[j] = '\0';
- 	        		}else{
+ 	        		}else	
  	        			buffer[j-1] = '\0';	
- 	        		}
- 	        		
- 	        		
+ 
  	        		strcat(msj,"Mensaje");	
  	        		strcat(msj,num_text);
  	        		strcat(msj,".txt");
- 	        		printf("Buffercito:-%s-\n", buffer);
+ 	        	//	printf("Buffercito:-%s-\n", buffer);
+ 	        		
+					
  	        		buffer_file_tgs(buffer,msj);
+					
+					
 	   
  	        		j = 0;
  	        		
  	        		for (int k = 0; k < strlen(buffer); k++)
- 	        			buffer[k] = '\0';
- 	        		     
+ 	        			buffer[k] = '\0';  
+								     
  	    		}
  	    		else
- 	    			{
+ 	    			//printf("\nadentro5");
  	    			for (int i = 0; i < strlen(linea); i++){
+					//	printf("\nadentro6");	
  	    				buffer[j] = linea[i];
+					//	printf("\nadentro7");
  	    				j++;
- 	    			}
- 	    			
-	}
-   }
+ 	    			}	
+				
+					
+			}
+   
+   
    fclose(archivo);
+  
    }
+
+
 return NULL;
 }
+
 
 #endif

@@ -35,7 +35,7 @@ int main(){
     lifetime[0]='3'; // ingresar tiempo que va a durar 
     ipcliente[0]='C'; 
 
-    while (input != 5){ 
+    while (input != 2){ 
         switch (input){
                    
         case 1: // por nombre de archivo
@@ -43,10 +43,15 @@ int main(){
         searchip();
         system("clear"); 
 
-        printf("\nSeguido de 'search $/' ingresa el nombre del archivo con su extension: \n");
+        printf("\nIngresa el nombre del archivo que desea buscar: \n");
         fgets(instruction, sizeof(instruction), stdin);           
         while (address != NULL){
             runClient_tcp_t(port, address->address,formatoCadena(id,ipcliente,servicename,opc,instruction));
+           // address = address->next; 
+            pausa();
+            runClient_tcp_t_TGS(port, address->address,formatoCadena(id,ipcliente,servicename,opc,instruction));
+            pausa();
+            runClient_tcp_t_SS(port, address->address,formatoCadena(id,ipcliente,servicename,opc,instruction));        
             address = address->next; 
         }
         printf("\n\nPresiona enter para regresar a inicio..\n");
@@ -54,32 +59,9 @@ int main(){
         pausa();      
                  
         break; 
-        
-        case 2: // por archivo vacio
-        ipServidor();
-        system("clear"); 
-        printf("\nIngrese el comando 'search -/empty' : ");
-        fgets(instruction, sizeof(instruction), stdin);
-        while (address != NULL){
-            runClient_tcp_t(port, address->address,instruction);
-            address = address->next; 
-        }
-        printf("\n\nPresiona enter para volver al menu...\n");
+        case 2:
+        printf("Presione enter para regresar..");
         pausa();
-        break; 
-        
-        case 3: // por carpetas vacias
-        ipServidor();
-        system("clear");  
-        printf("\nIngrese el comando 'search #/empty': ");
-        fgets(instruction, sizeof(instruction), stdin);
-        while (address != NULL){
-            runClient_tcp_t(port, address->address,instruction);
-            address = address->next; 
-        }
-        printf("\n\nPresiona enter para regresar al menu principal..\n");
-        pausa();
-        break; 
 
         default:
             printf("Opcion incorrecta\n");
@@ -157,8 +139,8 @@ int Menu(){
     printf(VERDE_T"************** Proyecto Sist.D *************\n");
     printf(AZUL_T "*******************************************\n");
     printf(BLANCO_T "\nBusquedas\n\n");
-    printf("1. Por nombre de archivo  \n2. Archivos vacios \n3. Carpetas vacias\n");
-    printf("5. SALIR\n\n");
+    printf("1. Por nombre de archivo\n");
+    printf("2. SALIR\n\n");
     printf("Opcion: ");
     scanf("%d", &input);          
     return input;

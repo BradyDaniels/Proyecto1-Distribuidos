@@ -1,0 +1,2 @@
+ID: bradyServicename: A,Timestamp: 23:31:41IPcliente: 192.168.1.109 
+LifetimeSS: 60,Clavesesion: hCATK

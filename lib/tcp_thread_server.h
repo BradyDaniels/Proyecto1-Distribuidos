@@ -17,12 +17,18 @@
 #define BUF_SIZE    2048    
 #define BACKLOG     5      
 
-char public_user_key[20], privadakey[20], cmd[512],  buff_rx[BUF_SIZE], clavesesion [50],id_tgs[20],
-file_cliente[25], timestampC[50], lifetimeC[10],idprueba[20], ipuser[20], p1[BUF_SIZE], p2[10]; 
+char public_user_key[20], privadakey[20], cmd[BUF_SIZE],  buff_rx[BUF_SIZE], clavesesion [50],id_tgs[20],
+file_cliente[25], timestampC[50], lifetimeC[10], lifetimeCTGS[10],idprueba[20], ipuser[20], p1[BUF_SIZE], p2[10],
+buf1tgs[BUF_SIZE], buf2tgs[BUF_SIZE], buf3tgs[BUF_SIZE], clavesesionTGS[50], nuevo[BUF_SIZE],
+cadena20[300], cadena21[300], clavesesion_ss[50], busqueda[500], timestampC2[50];
 //buff_as[BUF_SIZE],buff_as2[BUF_SIZE],
-time_t timestamp; 
+// time_t timestamp; 
 int lifetime = 60; 
+int lifetimeSS = 60;
 int auxi=0; // 60 sgundos de tiempo d vida 
+int port2 = 0, tgs =0; 
+time_t timestamp, timestampTGS;
+
 
 
 void *connection_handler(void *p_connfd){
@@ -32,10 +38,10 @@ void *connection_handler(void *p_connfd){
     free(p_connfd); // ??
     int  len_rx, len_tx = 0;   
     strcpy(id_tgs,"TgsUcab"); 
-
-
-
-                     	          
+          
+if(tgs==0)
+{
+         
     len_rx = read(connfd, buff_rx, sizeof(buff_rx));  // recibo 
 
 
@@ -70,8 +76,9 @@ void *connection_handler(void *p_connfd){
            if (auxi ==0){
             strcpy(idprueba,mcas->ID);
             strcpy(ipuser,mcas->pcliente); 
+            
            }
-           printf("\nvariable idprueba: %s",idprueba);
+          // printf("\nvariable idprueba: %s",idprueba);
 
         if(validarExistenciaUsuario(idprueba)==1){ // aqui esta el error 
         
@@ -86,7 +93,8 @@ void *connection_handler(void *p_connfd){
             strcpy(clavesesion,generate_key(8));
 
             // contruccion buffer 1 AS-CLIENTE
-            time_t timestamp; 
+            
+            time(&timestamp);
             strcpy(timestampC,time_to_string(timestamp)); // conv time a char
             sprintf(lifetimeC,"%d",lifetime); // conv int a char
             strcpy(buff_as,asCliente1(id_tgs,timestampC,lifetimeC,clavesesion));  
@@ -118,22 +126,8 @@ void *connection_handler(void *p_connfd){
             strcat(buff_as,"\n"); 
             strcat(buff_as,buff_as2); 
 
-
-           // strcat(buff_as,"\n");
-           // strcat(buff_as, buff_as2); 
-           
             write(connfd, buff_as, strlen(buff_as));
-           // write(connfd2, buff_as2, strlen(buff_as2)); //E nviado 
-
-           // para rcibir CLIENT - TGS 
-           len_rx =0; 
-           buff_rx[0]='\0';
-           len_rx = read(connfd, buff_rx, sizeof(buff_rx)); // Rcibo cliente - tgs 
-           // funcion para guardar en 3 cadenas 
-
-           // desncriptar cadena 1, guardar en variables.. 
-          
-
+ 
              id_tgs[0]='\0';
 
         }else{
@@ -143,40 +137,184 @@ void *connection_handler(void *p_connfd){
         }           
 
 
-
-
-
-//----------------------------------------------------
-
   
     system("rm archivorecibido.txt");
     system("rm archivorecibido.cifrado");
     system("rm archivorecibido.base64"); 
 
     printf("\n\n\n[SERVER AS]: Enviado\n");
-   // printf("%s \n %s",buff_as,buff_as2); 
     printf("\n%s",buff_as); 
-   // printf("\n\nBuffer 2:\n%s",buff_as2); 
     printf("\n\n[SERVER]: socket closed \n\n");
     buff_as[0]='\0';
+    tgs = 1;
     close(connfd); 
 
-
-
     }
-
-
     }
- 
-   // int connfd2 = *((int*)p_connfd);
-  //  free(p_connfd); // ??
-   // int  len_rx2, len_tx2 = 0; 
-   // write(connfd2, buff_as2, strlen(buff_as2));
-   // close(connfd2);
+}else{
+    if (tgs == 1)
+    {
+       // printf("\nENTRA A LA CONDICION PARA LA RCEPCION DL SGUNDO MENSAJ?\n");
+        system("clear");
+        buff_rx[0]='\0';
+        len_tx = read(connfd, buff_rx, sizeof(buff_rx)); 
+        printf("\nBUFER RECIBIDO [CLIENTE-TGS]\n%s",buff_rx);
+        buff_as[0]='\0';
+        // OPRACIONES CON EL BUFER RECIBIDO 
+
+       // printf("\nllega");
+        buffer_file_tgs(buf_as,"mensajes.txt");
+       
+
+        //CONSTRUCCION DE MENSAJS 
+        buf1tgs[0]='\0'; 
+        buf2tgs[0]='\0';
+         
+        time(&timestampTGS);
+        
+        strcpy(timestampC2,time_to_string(timestampTGS));
+
+/* brady al rescate 1
+        if(diff_time(timestamp,timestampTGS,lifetime)==1){
+            close(connfd); 
+        }
+*/     
+
+        strcpy(clavesesionTGS,generate_key(4));
+        strcpy(buf1tgs,formatoCadenaClienteTgs3(mcas->servicename,timestampC2,lifetimeC,clavesesionTGS)); 
+
+        sprintf(lifetimeCTGS,"%d",lifetimeSS);
+        strcpy(buf2tgs,formatoCadenaClienteTgs4(mcas->ID,mcas->servicename,timestampC2,mcas->pcliente,lifetimeCTGS,clavesesionTGS)); 
+           
+        printf("\nBufers antes de encriptar\n Buffer1:\n%s\n\nBufer2:\n%s\n\n",buf1tgs,buf2tgs);   
+        // encriptacion simetrica
+        FL_UPDATE_FILE_NAME[0]='\0';
+        buffer_file(buf1tgs);
+        buf1tgs[0]='\0'; 
+        //char buffprueba[BUF_SIZE];
+        cmd[0]='\0'; 
+        FL_UPDATE_FILE_NAME[0]='\0';
+        sprintf(cmd,"openssl enc -aes-256-cbc -md sha512 -pbkdf2 -iter 10000 -salt -in archivorecibido.base64 -out sesiontgs.cifrado -pass  pass:%s",clavesesion); 
+        printf("\nEsta es la clave de sesion: %s",clavesesion);
+        system(cmd);
+        system("openssl enc -base64 -in sesiontgs.cifrado -out archivooriginal.base64");        
+        strcpy(buf1tgs,file_buffer("archivooriginal.base64"));
+       // printf("\encriptado con simetrica: \n%s",buf1tgs);
+
+        //encriptacion asimetrica 
+        FL_UPDATE_FILE_NAME[0]='\0';
+       // buffer_file(buf2tgs);    
+        file_cliente[0]='\0';
+        system("rm archivooriginal.base64");
+        strcpy(nuevo,buf2tgs);
+        encriptado_keypublic(buf2tgs,"ss_publica"); //encriptado con la lalve del TGS
+       // strcpy(file_cliente,"archivooriginal.base64");   
+        buf2tgs[0]='\0';
+        strcpy(buf2tgs,file_buffer("archivooriginal.base64"));
+        buffer_file_prueba(buf2tgs); //prueba
+       // printf("\nBffer SS encriptado: \n%s",buf2tgs);
+
+        strcat(buf1tgs,"\n"); 
+        strcat(buf1tgs,buf2tgs); 
+        system("rm archivooriginal.base64");
+
+        printf("\n[SERVER TGS]\nMENSAJE ENVIADO TGS-CLIENTE\n%s",buf1tgs);
+
+
+
+        write(connfd, buf1tgs, strlen(buf1tgs));
+       // printf("\n\n\n[SERVER TGS]: Enviado\n");
+       // printf("\n%s",buff_as); 
+        tgs++; 
+        close(connfd); 
+
+    }else{
+        if(tgs==2)
+        {
+
+        system("clear");
+        buff_rx[0]='\0';
+        len_tx = read(connfd, buff_rx, sizeof(buff_rx)); 
+        printf("\nBUFER RECIBIDO CLIENTE-SS\n%s",buff_rx);
+       // system("rm archivorecibido.decifrado");
+        buff_as[0]='\0';
+        // OPRACIONES CON EL BUFER RECIBIDO 
+        buffer_file_tgs(buff_rx,"mensajes.txt");
+        separar_mensaje();
+        FL_UPDATE_FILE_NAME[0]='\0';
+        file_buffer("Mensaje1.txt"); 
+        strcat(FL_UPDATE_FILE_NAME,"\n");
+        system("rm archivorecibido.base64");
+        buffer_file(FL_UPDATE_FILE_NAME);
+        desencriptado_servidoresSS("Mensaje1.txt");
+        FL_UPDATE_FILE_NAME[0]='\0';
+        buff_as[0]='\0';
+        buff_rx[0] = '\0';
+        strcpy(buff_as,file_buffer("archivorecibido.txt"));
+  
+        printf("\n\nBufer1 desencriptado con llave ss: \n\n%s",nuevo);
+
+        cmd[0]='\0';
+        FL_UPDATE_FILE_NAME[0]='\0';
+        system("openssl enc -base64 -d -in Mensaje2.txt -out archivoSS.cifrado");
+        sprintf(cmd,"openssl enc -aes-256-cbc -md sha512 -pbkdf2 -in archivoSS.cifrado -out test.txt -d -pass pass:%s",clavesesionTGS);
+        system(cmd);
+        FL_UPDATE_FILE_NAME[0]='\0';
+
+        FILE *pFilexx;
+        pFilexx=fopen("test.txt","r");
+        if(pFilexx!=NULL){      
+            while(!feof(pFilexx)){
+                fgets(cadena20,3,pFilexx);
+                if(feof(pFilexx)) break;          
+                strcat(cadena21,cadena20);
+			
+            }
+        }
+        fclose(pFilexx);
+        strcpy(buff_rx,cadena21);
+        printf("\n\nBuffer 2 desencriptado con clave de sesion %s\n%s",clavesesionTGS,buff_rx);
+        
+
+
+/* brady al rescate 2
+        if(diff_time(timestamp,timestampTGS,lifetimeSS)==1){
+            close(connfd); 
+        }
+*/  
+
+        cmd[0]='\0';
+        printf("\n");
+        buf1tgs[0]='\0';
+        sprintf(cmd,"find /home -iname %s ",mcas->instruccion);
+        system(cmd);
+
+        FL_UPDATE_FILE_NAME[0]='\0';
+        buf1tgs[0]='\0';
+
+        //CONSTRUCCION DE MENSAJS 
+        
+     
+        printf("\n\n\n[SERVER SS]\nMENSAJE ENVIADO SS-CLIENTE\n");
+        system(cmd);
+
+
+
+        write(connfd, cmd, strlen(cmd));
+  
+        tgs++; 
+        close(connfd); 
+        }
+        }
+
+     }    
+
+//printf("\n final d archivo"); 
 
 }
 
 void runServer_tcp_t(int PORT){ 
+    port2 = PORT; 
     int sockfd, connfd;                         // descriptor para escucha y conxion 
     unsigned int len;                           // Tamaño de la direccion del cliente
     struct sockaddr_in servaddr, client;        // Socket address format for server and client
@@ -232,5 +370,8 @@ void runServer_tcp_t(int PORT){
         }                  
     }  
 }
+
+
+//-----------------------------------------------
 
 #endif
